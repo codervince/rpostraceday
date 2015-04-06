@@ -28,10 +28,10 @@ class RacingPostSpider(Spider):
     allowed_domains = ["racingpost.com", "pedigreequery.com"]
 
     start_urls = [
-        # "http://www.racingpost.com/horses2/cards/home.sd?r_date={today}".format(
-        #     today=datetime.today().strftime("%Y-%m-%d")
-        # )
-        'http://www.racingpost.com/horses2/cards/card.sd?race_id=622916&r_date=2015-04-06#raceTabs=sc_',
+        "http://www.racingpost.com/horses2/cards/home.sd?r_date={today}".format(
+            today=datetime.today().strftime("%Y-%m-%d")
+        )
+        # 'http://www.racingpost.com/horses2/cards/card.sd?race_id=622916&r_date=2015-04-06#raceTabs=sc_',
     ]
 
     main_url = "http://www.racingpost.com"
@@ -58,14 +58,14 @@ class RacingPostSpider(Spider):
 
         # improved version excludes AUS and Scoop6
         # for href in response.xpath("//td[@class='crd bull']/a/@href[preceding::h3[not(contains(., 'WORLDWIDE STAKES RACES'))  and not(contains(.,'(AUS)')) and not(contains(., ' SCOOP6 RACES' ))        ]]").extract():
-    #     for href in response.xpath("//td[@class='crd bull']/a/@href").extract():
-    #         request = Request(
-    #             re.sub(r'card\.sd', 'card_verdict.sd', urlparse.urljoin(self.main_url, href)),
-    #             callback=self.parse_diomed
-    #         )
-    #         yield request
-    #
-    # def parse_diomed(self, response):
+        for href in response.xpath("//td[@class='crd bull']/a/@href").extract():
+            request = Request(
+                re.sub(r'card\.sd', 'card_verdict.sd', urlparse.urljoin(self.main_url, href)),
+                callback=self.parse_diomed
+            )
+            yield request
+
+    def parse_diomed(self, response):
 
         item_loader = RacedayItemLoader(item=HorseItem(), response=response)
         item_loader.add_xpath('diomed', "//div[@id='diomed_verdict']//text()")
