@@ -18,7 +18,7 @@ class Handle404Middleware(object):
 
     def process_response(self, request, response, spider):
 
-        if response.status == 404:
+        if response.status in [404, 403]:
             try:
                 return response.meta['item']
             except KeyError:

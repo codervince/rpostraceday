@@ -36,7 +36,7 @@ class RacingPostSpider(Spider):
 
     main_url = "http://www.racingpost.com"
 
-    handle_httpstatus_list = [404]
+    handle_httpstatus_list = [404, 403]
 
     def parse(self, response):
         """
@@ -191,7 +191,8 @@ class RacingPostSpider(Spider):
                 meta={
                     'item': item_loader.load_item()
                 },
-                callback=self.parse_sire
+                callback=self.parse_sire,
+                dont_filter=True
             )
         else:
             yield item_loader.load_item()
@@ -211,7 +212,8 @@ class RacingPostSpider(Spider):
                 meta={
                     'item': item_loader.load_item()
                 },
-                callback=self.parse_pefquery
+                callback=self.parse_pefquery,
+                dont_filter=True,
             )
         else:
             yield item_loader.load_item()

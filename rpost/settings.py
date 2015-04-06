@@ -5,7 +5,7 @@ BOT_NAME = 'rpost'
 
 ITEM_PIPELINES = {
     # "rpost.pipelines.RpostPipeline":1
-    "rpost.pipelines.CsvExportPipeline":1
+    "rpost.pipelines.CsvExportPipeline": 1,
     # "hkdata.pipelines.MyImagesPipeline":1,
     # "hkdata.pipelines.ByteStorePipeline":1,
     # "hkdata.pipelines.BasicPipelineRaceday":1,
