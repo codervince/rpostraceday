@@ -14,6 +14,7 @@ import re
 import pprint
 
 import scrapy
+from scrapy.contrib.exporter import CsvItemExporter
 from scrapy.signalmanager import SignalManager
 from scrapy.signals import spider_closed
 from scrapy.xlib.pydispatch import dispatcher
@@ -103,3 +104,23 @@ class RpostPipeline(object):
             session.close()
         return item
 
+
+class CsvExportPipeline(object):
+    """Pipeline for exporting the scraped items to a .csv file"""
+
+    def __init__(self):
+        self.file = None
+        self.exporter = None
+
+    def open_spider(self, spider):
+        self.file = open('{}.csv'.format(spider.name), 'wb')
+        self.exporter = CsvItemExporter(self.file)
+        self.exporter.start_exporting()
+
+    def process_item(self, item, spider):
+        self.exporter.export_item(item)
+        return item
+
+    def close_spider(self, spider):
+        self.exporter.finish_exporting()
+        self.file.close()

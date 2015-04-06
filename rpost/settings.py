@@ -1,17 +1,11 @@
- # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
-# Scrapy settings for rpost project
-#
-# For simplicity, this file contains only the most important settings by
-# default. All the other settings are documented here:
-#
-#     http://doc.scrapy.org/en/latest/topics/settings.html
-#
 
 BOT_NAME = 'rpost'
 
 ITEM_PIPELINES = {
-    "rpost.pipelines.RpostPipeline":1
+    # "rpost.pipelines.RpostPipeline":1
+    "rpost.pipelines.CsvExportPipeline":1
     # "hkdata.pipelines.MyImagesPipeline":1,
     # "hkdata.pipelines.ByteStorePipeline":1,
     # "hkdata.pipelines.BasicPipelineRaceday":1,
@@ -24,6 +18,20 @@ ITEM_PIPELINES = {
 
 SPIDER_MODULES = ['rpost.spiders']
 NEWSPIDER_MODULE = 'rpost.spiders'
+
+SPIDER_MIDDLEWARES = {
+    'rpost.middlewares.Handle404Middleware': 543,
+}
+
+# REFERER_ENABLED = True
+# COOKIES_ENABLED = True
+# DOWNLOAD_DELAY = 0.25
+# CONCURRENT_ITEMS = 100
+# CONCURRENT_REQUESTS = 8
+# CONCURRENT_REQUESTS_PER_DOMAIN = 1
+# DOWNLOAD_TIMEOUT = 1000
+# REDIRECT_MAX_METAREFRESH_DELAY = 1000
+
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = "Googlebot/2.1 ( http://www.google.com/bot.html)"
