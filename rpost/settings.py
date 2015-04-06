@@ -33,4 +33,4 @@ DATABASE = {'drivername': 'postgres',
             'port': '5432',
             'username': 'vmac',
             'password': '',
-            'database': 'rpraceday9'}
+            'database': 'rpraceday3'}
