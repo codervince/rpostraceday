@@ -35,6 +35,9 @@ class RacingPostSpider(Spider):
 
     main_url = "http://www.racingpost.com"
 
+    handle_httpstatus_list = [404, 403]
+
+
     def parse(self, response):
         """
         We parse the race cards list pages, and extract all the race cards urls
@@ -150,10 +153,19 @@ class RacingPostSpider(Spider):
     def parse_horse_card(self, response):
 
         sire_href = response.xpath("//ul[@id='detailedInfo']/li[2]/b[1]/a/@href").extract()
-        
+        item_loader = RacedayItemLoader(item=HorseItem(response.meta['item']), response=response)
+        ###CAREER STATS
+        for i, rec in enumerate(response.xpath("//table[@class='grid right']//tr").extract()):
+            if i < 5:
+                rec_title = response.xpath("//table[@class='grid right']//tr[%s]/td/a/text()" % str(i+2)).extract()
+                rec_stats = response.xpath("//table[@class='grid right']//tr[%s]//td/text()" % str(i+2)).extract()
+                rec_stats = u":".join(rec_stats)
+                item_loader.add_value('record_{}'.format(i+1), rec_title)
+                item_loader.add_value('record_{}_stats'.format(i+1), rec_stats)
+        # response.xpath("//table[@class='grid right']//tr[3]/td/a/text()").extract()
 
         # get stallion
-        item_loader = RacedayItemLoader(item=HorseItem(response.meta['item']), response=response)
+        
         item_loader.add_xpath('hage', "//ul[@id='detailedInfo']/li[1]/b/text()", re= r"([\d]+)-y-o.*")
         for index, wgt in enumerate(response.xpath("//div[@id='horse_form']//tr/td[4]//text()").extract()):
         # for index, wgt in enumerate(response.xpath("//div[@id='horse_form']//tr"):
@@ -179,14 +191,21 @@ class RacingPostSpider(Spider):
             if index < 5:
                 item_loader.add_value('L{}dist'.format(index + 1), d.xpath("./text()").extract())
                 item_loader.add_value('L{}going'.format(index + 1), d.xpath("./text()").extract())
-                item_loader.add_value('L{}racecourse'.format(index + 1), d.xpath(".//a/text()").extract())  
+                item_loader.add_value('L{}racecourse'.format(index + 1), d.xpath("./a/text()").extract())  
             else:
                 break
+        for index, outcome in enumerate(response.xpath("//div[@id='horse_form']//tr//td[5]")):
+            if index <5:
+                item_loader.add_value('L{}lbw'.format(index + 1), outcome.xpath(".//a/text()").extract())
+            else:
+                break
+
         cleanr =re.compile('<.*?>')
         for index, outcome in enumerate(  response.xpath("//div[@id='horse_form']//tr//td[5]").extract()): 
         # for index, wgt in enumerate(response.xpath("//div[@id='horse_form']//tr"):
             if index < 5:
                 item_loader.add_value('L{}raceoutcome'.format(index + 1), re.sub(cleanr,'', outcome.strip()) )
+                
                 item_loader.add_value('L{}pos'.format(index + 1), re.sub(cleanr,'', outcome.strip()) )
                 item_loader.add_value('L{}ran'.format(index + 1), re.sub(cleanr,'', outcome.strip()) )
                 item_loader.add_value('L{}sp'.format(index + 1), re.sub(cleanr,'', outcome.strip()) )
@@ -197,8 +216,10 @@ class RacingPostSpider(Spider):
                 sire_href[0],
                 meta={
                         'item': item_loader.load_item()
+                        
                 },
-                callback=self.parse_sire
+                callback=self.parse_sire,
+                dont_filter=True
             )
 
 
@@ -208,17 +229,18 @@ class RacingPostSpider(Spider):
         horsename = response.meta['item']['horsename']
         item_loader = RacedayItemLoader(item=HorseItem(response.meta['item']), response=response)
         item_loader.add_xpath('sirecomment', ".//tr[2]/td/ul/li[4]/strong/text()")
-        return item_loader.load_item()
-        # if horsename: 
-        #     pedigree_href = horsename[0].replace(" ", "+")
-        #     ped_href = urlparse.urljoin(main_pedigree_url, pedigree_href)
-        #     yield Request(
-        #         ped_href,
-        #         meta={
-        #                 'item': item_loader.load_item()
-        #         },
-        #         callback=self.parse_pefquery
-        #     )
+        # return item_loader.load_item()
+        if horsename: 
+            pedigree_href = unicode.lower(horsename.replace(" ", "+"))
+            ped_href = urlparse.urljoin(main_pedigree_url, pedigree_href)
+            yield Request(
+                ped_href,
+                meta={
+                        'item': item_loader.load_item()
+                },
+                callback=self.parse_pefquery,
+                dont_filter=True,
+            )
 
     def parse_pefquery(self,response):
 

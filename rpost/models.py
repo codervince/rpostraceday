@@ -107,6 +107,23 @@ class RPRacedaydump(ModelBase):
     L3pos = Column("l3pos", String(255))
     L4pos = Column("l4pos", String(255))
     L5pos = Column("l5pos", String(255))
+
+    L1lbw = Column("l1lbw", String(255))
+    L2lbw = Column("l2lbw", String(255))
+    L3lbw = Column("l3lbw", String(255))
+    L4lbw = Column("l4lbw", String(255))
+    L5lbw = Column("l5lbw", String(255))
+
+    record_1 = Column("record1", String(255))
+    record_1_stats = Column("record1stats", String(255))
+    record_2 = Column("record2", String(255))
+    record_2_stats = Column("record2stats", String(255))  
+    record_3 = Column("record3", String(255))
+    record_3_stats = Column("record3stats", String(255))  
+    record_4 = Column("record4", String(255))
+    record_4_stats = Column("record4stats", String(255))  
+    record_5 = Column("record5", String(255))
+    record_5_stats = Column("record5stats", String(255))  
     #ADD NUMPOS
     L1sp = Column("l1sp", Float)
     L2sp = Column("l2sp", Float)

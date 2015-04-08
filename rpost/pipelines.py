@@ -15,6 +15,7 @@ import pprint
 
 import scrapy
 from scrapy.signalmanager import SignalManager
+from scrapy.contrib.exporter import CsvItemExporter
 from scrapy.signals import spider_closed
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.contrib.pipeline.images import ImagesPipeline
@@ -60,10 +61,13 @@ def getclasschange(rname, rpm, l1class):
             return None
 
 def getledcount(l):
+    ct= 0
     try:
         for r in l:
-            if r is not None:
-                if u'led' in r or u'prominent' in r:
+            if r is None:
+                pass
+            else:
+                if u'led' in r or u'prominent' in r or 'leader' in r:
                     ct+=1
         return ct
     except:
@@ -139,6 +143,21 @@ class RpostPipeline(object):
                     L3going= item.get("L3going", None),
                     L4going= item.get("L4going", None),
                     L5going= item.get("L5going", None),
+                    L1lbw= item.get("L1lbw", None),
+                    L2lbw= item.get("L2lbw", None),
+                    L3lbw= item.get("L3lbw", None),
+                    L4lbw= item.get("L4lbw", None),
+                    L5lbw= item.get("L5lbw", None),
+                    record_1 =item.get("record_1", None),
+                    record_1_stats = item.get("record_1_stats", None),
+                    record_2 =item.get("record_2", None),
+                    record_2_stats = item.get("record_2_stats", None),
+                    record_3 =item.get("record_3", None),
+                    record_3_stats = item.get("record_3_stats", None),
+                    record_4 =item.get("record_4", None),
+                    record_4_stats = item.get("record_4_stats", None),
+                    record_5 =item.get("record_5", None),
+                    record_5_stats = item.get("record_5_stats", None),
                     L1racecourse= item.get("L1racecourse", None),
                     L2racecourse= item.get("L1racecourse", None),
                     L3racecourse= item.get("L1racecourse", None),
@@ -167,3 +186,22 @@ class RpostPipeline(object):
             session.close()
         return item
 
+class CsvExportPipeline(object):
+    """Pipeline for exporting the scraped items to a .csv file"""
+
+    def __init__(self):
+        self.file = None
+        self.exporter = None
+
+    def open_spider(self, spider):
+        self.file = open('{}.csv'.format(spider.name), 'wb')
+        self.exporter = CsvItemExporter(self.file)
+        self.exporter.start_exporting()
+
+    def process_item(self, item, spider):
+        self.exporter.export_item(item)
+        return item
+
+    def close_spider(self, spider):
+        self.exporter.finish_exporting()
+        self.file.close()

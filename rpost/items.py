@@ -4,6 +4,14 @@
 #
 # See documentation in:
 # http://doc.scrapy.org/en/latest/topics/items.html
+
+##TODO: Fix L1dist at present returns 2nd char of going!
+## place should return PU F etc
+## L1sp etc does not return correct value ALL same
+## also racecourse returns 1st as ALL values..
+## Prominency class change does not work
+
+
 import scrapy
 from scrapy.contrib.loader import ItemLoader
 from scrapy.contrib.loader.processor import TakeFirst, Compose, Join, MapCompose, Identity
@@ -22,14 +30,16 @@ def decimalizeodds(winodds):
     '''edge cases 9/4F EvensF '''
     if winodds is None:
         return None
-    elif "Evens" in winodds:
+    elif u'Evens' in winodds or u'EvensF' in winodds:
         return 2.0
     else:
         #remove non digit chars not /
-        winodds = winodds.replace("F", "").replace("J", "").replace("C", "")
-        num, denom = winodds.split("/")
-        dec = Fraction(int(num), int(denom)) + Fraction(1,1)
-        return float(dec)
+        try:
+            winodds = winodds.replace(u'F', u'').replace(u'f', u'').replace(u'J', u'').replace(u'C', u'')
+            num, denom = winodds.split(u'/')
+            return try_float( (try_int(num)/int(denom)) + 1.0 )
+        except:
+            return None
 
 
 def getsireid(value):
@@ -100,18 +110,18 @@ def postLBWresults(value):
     else:
         return None 
 
-def decimalizeodds(winodds):
-    '''edge cases 9/4F EvensF '''
-    if winodds is None:
-        return None
-    elif "Evens" in winodds or "EvensF" in winodds:
-        return 2.0
-    else:
-        #remove non digit chars not /
-        winodds = winodds.replace("F", "").replace("J", "").replace("C", "")
-        num, denom = winodds.split("/")
-        dec = Fraction(int(num), int(denom)) + Fraction(1,1)
-        return round(float(dec),2)
+# def decimalizeodds(winodds):
+#     '''edge cases 9/4F EvensF '''
+#     if winodds is None:
+#         return None
+#     elif "Evens" in winodds or "EvensF" in winodds:
+#         return 2.0
+#     else:
+#         #remove non digit chars not /
+#         winodds = winodds.replace("F", "").replace("J", "").replace("C", "")
+#         num, denom = winodds.split("/")
+#         dec = Fraction(int(num), int(denom)) + Fraction(1,1)
+#         return round(float(dec),2)
 
 def processplace(place):
     if place is None:
@@ -131,10 +141,11 @@ def disttofurlongs(x):
         miles= try_float(re.match(r".*([\d]{1})m.*",x).group(1))
     if 'y' in x:
         yards= try_int(re.match(r".*([\d]{1,3})y.*",x).group(1))
+        #yards in furlongs
         yards = try_float(yards/110)
     if 'f' in x:
-        miles= try_float(re.match(r".*([\d]{1})f.*",x).group(1))
-    return 8*miles + furlongs + yards
+        furlongs= try_float(re.match(r".*([\d]{1})f.*",x).group(1))
+    return miles*8 + furlongs*1 + yards*0.0045454
 
 def processplace(place):
     if place is None:
@@ -182,17 +193,21 @@ def processplace(place):
 #     breeder =scrapy.Field()
 #     totalsales = scrapy.Field()
 
+def getabbracegoing(x):
+    if x is None:
+        return None
+    d= {'Good To Soft':'GS','Soft':'Sft', 'Heavy':'Hy', 'Standard':'Std','Good':'Gd', 'Firm': 'Fm', 'Very Soft': 'VS'}
+    temp = d.get(str(x))
+    if temp:
+        return temp
+    else:
+        return x
+
+
 def cleanUnicode(value):
     return ''.join(value.splitlines()).replace(u'\2014', '').encode('ascii', 'ignore')
 
-def getCD(value):
-    #remove odd chars
-    # rtn = cleanUnicode(value)
-    try: 
-        # rtn = rtn.split('CD')[1].split('-')[0].replace('=', '')
-        return re.match(r".*\s+CD\s+=\s+([0-9.]+).*", value).group(0)
-    except:
-        return value
+
 
 # def getDI(value):
 #     #remove odd chars
@@ -236,7 +251,7 @@ def fixpedcomment(value):
     return strip_tags(value[0]).encode('ascii', 'ignore').replace('(CLOSE)', '')
 
 def mystrip(value):
-    return value.replace(u'\n', u'').replace(u'\u2014', u'-').replace(u'\t', u'').replace(u'\r', u'') 
+    return value.replace(u'\n', u'').replace(u'\u2014', u'-').replace(u'\t', u'').replace(u'\r', u'').replace(u'\xa0', u'')
 
 ###INPUT PROCESSORS 
 
@@ -259,10 +274,17 @@ def getpm(x):
     except:
         return u'No PM'
 
-def getDI(x):
+def getcd(x):
+    try: 
+        # rtn = rtn.split('CD')[1].split('-')[0].replace('=', '')
+        return re.match(r".*CD\s=\s([0-9.]{3,4}).*", x).group(1)
+    except:
+        return u'N/A'
+
+def getdi(x):
     try: 
         # rtn = rtn.split('DI')[1].split('CD')[0].replace('=', '')
-        return re.match(r".*\s+DI\s+=\s+([0-9.]+).*", x).group(0)
+        return re.match(r".*DI\s=\s([0-9.]{3,4}).*", x).group(1)
     except:
         return u'N/A'
 
@@ -306,7 +328,7 @@ def getLran(x):
 
 def getLdist(x):
     try:
-        return try_float(re.match(r".*([\d.]+)",x.replace(u'\n',u'')).group(1))
+        return try_float(re.match(r".*([0-9.]{1,4})[A-Z]{1}.*",x.replace(u'\n',u'')).group(1))
     except:
         return x
 
@@ -324,7 +346,13 @@ def getLgoing(x):
 
 def getLsp(x):
     try:
-        return decimalizeodds(re.match(r".*(\d+\/\d{1,2}F{0,1}).*", x.replace(u'\n',u'')).group(1))
+        return decimalizeodds(re.match(r".*(\d{1,2}\/\d{1,2}F{0,1}).*", x.replace(u'\n',u'')).group(1))
+    except:
+        return x
+
+def getLlbw(x):
+    try:
+        return re.findall(r".*\((.*)L\s.*", x)
     except:
         return x
 
@@ -414,7 +442,21 @@ class HorseItem(scrapy.Item):
     pmL3 = scrapy.Field()
     pmL4 = scrapy.Field()
     pmL5 = scrapy.Field()
-
+    L1lbw = scrapy.Field()
+    L2lbw = scrapy.Field()
+    L3lbw = scrapy.Field()
+    L4lbw = scrapy.Field()
+    L5lbw = scrapy.Field()
+    record_1 = scrapy.Field()
+    record_1_stats = scrapy.Field()
+    record_2 = scrapy.Field()
+    record_2_stats = scrapy.Field()
+    record_3 = scrapy.Field()
+    record_3_stats = scrapy.Field()
+    record_4 = scrapy.Field()
+    record_4_stats = scrapy.Field()
+    record_5 = scrapy.Field()
+    record_5_stats = scrapy.Field()
 
 class RacedayItemLoader(ItemLoader):
      default_item_class = HorseItem
@@ -446,7 +488,11 @@ class RacedayItemLoader(ItemLoader):
      diomed_out = Compose(Join())
      
      # raceclass_in = MapCompose(Join())
-     raceclass_out = Compose(Join())
+     raceclass_in = Compose(Join(), mystrip)
+     raceclass_out = TakeFirst()
+     racename_in = Compose(Join(), mystrip)
+     racename_out = TakeFirst()
+
 
      racepm_in = MapCompose(gettodayspm)
      racepm_out = TakeFirst()
@@ -461,7 +507,7 @@ class RacedayItemLoader(ItemLoader):
 
 
      pedigreecomment_in = MapCompose(strip_tags)
-     pedigreecomment_out =TakeFirst()
+     pedigreecomment_out =Compose(TakeFirst(),unicode.strip, mystrip)
      # CD_in = Join()
      # CD_out = Compose(mystrip, getCD)
      # DI_in = MapCompose(getDI)
@@ -542,36 +588,19 @@ class RacedayItemLoader(ItemLoader):
      L5going_out = TakeFirst()
      L5sp_in = MapCompose(unicode.strip)
      L5sp_out = Compose(TakeFirst(), getLsp)
-     # default_output_processor = Compose(TakeFirst(), mystrip)
-     # ClassL1_out = TakeFirst()
-     # ClassL2_out = TakeFirst()
-     # ClassL3_out = TakeFirst()
-     # ClassL4_out = TakeFirst()
-     # ClassL5_out = TakeFirst()
-     # L1comment_out = TakeFirst()
-     # L2comment_out = TakeFirst()
-     # L3comment_out = TakeFirst()
-     # L4comment_out = TakeFirst()
-     # L5comment_out = TakeFirst()
-     # racedistance_out = TakeFirst()
-     # raceclass_out = Join()
-     # racename_out = Join()
-     # racetime_out = TakeFirst()
-     # timestamp_out = TakeFirst()
-     # sirecomment_out = TakeFirst()
-     # racegoing_out = TakeFirst()
-     # age_out = TakeFirst()
-     # barrier_out  = Compose(TakeFirst(), try_int)
-     # horsenumber_out  = Compose(TakeFirst(), try_int)
-     # dayssincelastrun_out  = Compose(TakeFirst(), try_int)
-     # # comment_out = TakeFirst()
 
-     # # pedstats_out  = TakeFirst()
-     # # horsename_out  = TakeFirst()
-     # # L1raceoutcome= TakeFirst()
-     # # L2raceoutcome= TakeFirst()
-     # # L3raceoutcome= TakeFirst()
-     # # L4raceoutcome= TakeFirst()
+     L1lbw_in = MapCompose(unicode.strip,getLlbw)
+     L1lbw_out = TakeFirst()
+     L2lbw_in = MapCompose(unicode.strip,getLlbw)
+     L2lbw_out = TakeFirst()
+     L3lbw_in = MapCompose(unicode.strip,getLlbw)
+     L3lbw_out = TakeFirst()
+     L4lbw_in = MapCompose(unicode.strip,getLlbw)
+     L4lbw_out = TakeFirst()
+     L5lbw_in = MapCompose(unicode.strip,getLlbw)
+     L5lbw_out = TakeFirst()
+     # L2lbw_in
+
      # # L5raceoutcome= TakeFirst()
      WGTL1_in = MapCompose(unicode.strip)
      WGTL2_in = MapCompose(unicode.strip)
@@ -596,7 +625,7 @@ class RacedayItemLoader(ItemLoader):
      
      ##INT
      racegoing_in = MapCompose(unicode.strip)
-     racegoing_out = TakeFirst()
+     racegoing_out = Compose(TakeFirst(),getabbracegoing)
      rpRPR_out = Compose(TakeFirst(),try_int)
      rpTS_out = Compose(TakeFirst(),try_int)
      rpOR_out = Compose(TakeFirst(),try_int)
@@ -607,6 +636,36 @@ class RacedayItemLoader(ItemLoader):
 
      sirecomment_out = TakeFirst()
      timestamp_out = TakeFirst()
+
+     pedstats_in = Join()
+     pedstats_out = Compose(TakeFirst(),unicode.strip, mystrip)
+
+     CD_in = Join()
+     CD_out = Compose(TakeFirst(),unicode.strip, mystrip, getcd)
+
+     DI_in = Join()
+     DI_out = Compose(TakeFirst(),unicode.strip, mystrip, getdi)
+
+     record_1_in = MapCompose(unicode.strip, mystrip)
+     record_1_stats_in = MapCompose(unicode.strip, mystrip)
+     record_1_out = TakeFirst()
+     record_1_stats_out = TakeFirst()
+     record_2_in = MapCompose(unicode.strip, mystrip)
+     record_2_stats_in = MapCompose(unicode.strip, mystrip)
+     record_2_out = TakeFirst()
+     record_2_stats_out = TakeFirst()
+     record_3_in = MapCompose(unicode.strip, mystrip)
+     record_3_stats_in = MapCompose(unicode.strip, mystrip)
+     record_3_out = TakeFirst()
+     record_3_stats_out = TakeFirst()
+     record_4_in = MapCompose(unicode.strip, mystrip)
+     record_4_stats_in = MapCompose(unicode.strip, mystrip)
+     record_4_out = TakeFirst()
+     record_4_stats_out = TakeFirst()
+     record_5_in = MapCompose(unicode.strip, mystrip)
+     record_5_stats_in = MapCompose(unicode.strip, mystrip)
+     record_5_out = TakeFirst()
+     record_5_stats_out = TakeFirst()
      # # # default_output_processor = Compose(TakeFirst(), unicode, unicode.strip)
      # # DI_out = Compose(TakeFirst(), unicode, unicode.strip)
      # CD_out = Compose(TakeFirst(), unicode, unicode.strip)

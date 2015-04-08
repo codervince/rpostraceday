@@ -11,7 +11,8 @@
 BOT_NAME = 'rpost'
 
 ITEM_PIPELINES = {
-    "rpost.pipelines.RpostPipeline":1
+    # "rpost.pipelines.RpostPipeline":1,
+    "rpost.pipelines.CsvExportPipeline": 1,
     # "hkdata.pipelines.MyImagesPipeline":1,
     # "hkdata.pipelines.ByteStorePipeline":1,
     # "hkdata.pipelines.BasicPipelineRaceday":1,
@@ -25,6 +26,11 @@ ITEM_PIPELINES = {
 SPIDER_MODULES = ['rpost.spiders']
 NEWSPIDER_MODULE = 'rpost.spiders'
 
+SPIDER_MIDDLEWARES = {
+    'rpost.middlewares.Handle404Middleware': 543,
+}
+
+
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = "Googlebot/2.1 ( http://www.google.com/bot.html)"
 
@@ -33,4 +39,4 @@ DATABASE = {'drivername': 'postgres',
             'port': '5432',
             'username': 'vmac',
             'password': '',
-            'database': 'rpraceday3'}
+            'database': 'rpraceday7'}
